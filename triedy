@@ -1,0 +1,451 @@
+
+from connect import *
+import pydoc
+import random
+'''classes with gateways(insert update delete) find methods'''
+class PL:
+    '''persons languages
+    every person may know more than one language.
+    by every language may speak more people.
+    attributes :
+    persons_id
+    languages_id '''
+    def __init__(self, persons_id, languages_id):
+        self.persons_id = persons_id
+        self.languages_id = languages_id
+        
+class PLGateway:
+    '''persons languages gateways'''
+    def __init__(self, pl):
+        self.pl = pl
+
+    def insert(self):        
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('INSERT INTO persons_languages (persons_id, languages_id) VALUES (%s, %s)',
+                       (self.pl.persons_id, self.pl.languages_id))
+        connection.commit()
+        put_connection(connection)
+    
+    def update(self, new_p_id, new_l_id):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('UPDATE persons_languages SET persons_id = %s, languages_id = %s WHERE persons_id=%s AND languages_id = %s',
+                       (self.pl.persons_id, self.pl.languages_id, new_p_id, new_l_id))
+        self.pl.persons_id = new_p_id
+        self.pl.language_id = new_l_id
+        connection.commit()
+        put_connection(connection)
+    def delete(self):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('DELETE FROM persons_languages WHERE persons_id = %s AND languages_id = %s', (self.pl.persons_id, self.pl.languages_id))
+        connection.commit()
+        put_connection(connection)
+class PLFinder:
+    '''find with 2 methods
+    first find by person_id and language_id
+    second findLanguagesForPerson by person_id - here can be more fields'''
+    @staticmethod
+    def find(p_id, l_id):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('SELECT persons_id, languages_id FROM persons_languages WHERE persons_id = %s AND languages_id = %s', (p_id, l_id))
+        (p_id, l_id) = cursor.fetchone()
+        connection.commit()
+        put_connection(connection)
+        return MovieGateway(Movie(p_id, l_id))
+
+    @staticmethod
+    def findLanguagesForPerson(p_id):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('SELECT languages_id FROM persons_languages WHERE persons_id = %s', (p_id,))            
+        connection.commit()
+        arrayLang=cursor.fetchall()
+        put_connection(connection)
+        return arrayLang
+
+#------------------------------------------------------------------------------------------------------
+
+class Act:
+    '''class Act-Cast in film
+    attributes actor_id movie_id'''    
+    def __init__(self,Actor_id,Moovie_id):
+        self.Actor_id=Actor_id
+        self.Movies_id=Moovie_id
+    
+
+class ActGateway:
+    '''Act-Cast gateway which contains insert,update,delete'''
+    Act = None
+    def __init__(self, Act):
+        self.Cast = Act
+
+    def insert(self):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('INSERT INTO Act (Actor_id, Movies_id) VALUES (%s, %s)',
+                       (self.Cast.Actor_id, self.Cast.Movies_id))
+        connection.commit()
+        put_connection(connection)
+    def update(self):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('UPDATE Act SET Actor_id=%s, Movies_id=%s',
+                       (self.Cast.Actor_id, self.Cast.Movies_id))
+        connection.commit()
+        put_connection(connection)
+    def delete(self):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('DELETE FROM Act WHERE Actor_id=%s and Movies_id=%s', 
+                       (self.Cast.Actor_id,self.Cast.Movies_id))
+        connection.commit()
+        put_connection(connection)
+class ActFinder:
+    @staticmethod
+    def find(Act_id):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('SELECT actor_id, movies_id FROM Act WHERE actor_id=%s',(Act_id,))
+        (Act_id, Movie_id) = cursor.fetchone()
+        connection.commit()
+        put_connection(connection)
+        return ActGateway(Act(Act_id, Movie_id))
+    @staticmethod
+    def findByMovie(Movie_id):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('SELECT actor_id, movies_id  FROM Act WHERE movies_id=%s',(Movie_id,))
+        try:
+            (Act_id, Movie_id) = cursor.fetchone()
+        except:
+            return None
+        connection.commit()
+        put_connection(connection)
+        return ActGateway(Act(Act_id, Movie_id))
+     
+#------------------------------------------------------------------------------------------------------      
+        
+
+class Language:
+    '''every language has an ID    
+    attributes : id,name'''
+    def __init__(self,name,ID=None):
+        self.id=ID
+        self.name=name
+
+class LanguageGateway:
+    '''Language gateway which contains insert,update,delete'''
+    Language = None
+    def __init__(self, Language):
+        self.Language = Language
+
+    def insert(self):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('INSERT INTO Languages (lang_name) VALUES (%s) RETURNING id',
+                       (self.Language.name,))
+        new_id = cursor.fetchone()[0]
+        connection.commit()
+        put_connection(connection)
+        self.Language.id = new_id
+
+    def update(self):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('UPDATE Languages SET lang_name=%s WHERE id=%s',
+                       (self.Language.name,self.Language.id))
+        connection.commit()
+        put_connection(connection)
+    def delete(self):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('DELETE FROM Languages WHERE id=%s', (self.Language.id,))
+        connection.commit()
+        put_connection(connection)
+class LanguageFinder:
+    '''find Language by its ID'''
+    @staticmethod
+    def find(Language_id):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('SELECT id, lang_name FROM Languages WHERE id=%s', (Language_id,))
+        (Language_id, name) = cursor.fetchone()
+        connection.commit()
+        put_connection(connection)
+        return LanguageGateway(Language(name,Language_id))
+
+#------------------------------------------------------------------------------------------------------           
+               
+class Director:
+    '''Director of film
+        attributes:
+        id,Person_id,Person_id,is_main_director
+    '''
+    def __init__(self,Person_id,Movies_id,is_main_director=False,ID=None):
+        self.id=ID
+        self.Person_id=Person_id
+        self.Movie_id=Movies_id
+        self.is_main_director=is_main_director
+        
+class DirectorGateway:
+    '''Director gateway which contains insert,update,delete'''
+    D = None
+    def __init__(self, director):
+        self.D = director
+ 
+    def insert(self):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('INSERT INTO Directors (Persons_id,Movie_id,is_main_director) VALUES (%s, %s, %s) RETURNING id',
+                       (self.D.Person_id, self.D.Movie_id, self.D.is_main_director))
+        
+        new_id = cursor.fetchone()[0]
+        connection.commit()
+        put_connection(connection)
+        self.D.id = new_id
+
+    def update(self):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('UPDATE Directors SET Persons_id=%s, Movie_id=%s, is_main_director=%s WHERE id=%s',
+                       (self.D.Persons_id, self.D.Movie_id, self.D.is_main_director, self.D.id))
+        connection.commit()
+        put_connection(connection)
+    def delete(self):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('DELETE FROM Directors WHERE movie_id=%s', (self.D.Movie_id,))
+        connection.commit()
+        put_connection(connection)
+class DirectorsFinder:
+    '''find Director by its ID'''
+    @staticmethod
+    def find(Director_id):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('SELECT Persons_id, movies_id, id, is_main_director FROM Directors WHERE persons_id=%s', (Director_id,))
+        try:
+            (Persons_id,M_id,ID , IMD) = cursor.fetchone()
+        except:
+            return None
+        connection.commit()
+        put_connection(connection)
+        return DirectorGateway(Director(Persons_id,M_id,ID , IMD))
+    @staticmethod
+    def findByMovie(M_id):
+        '''find Director by its Movie_id'''
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('SELECT Persons_id, movie_id, id, is_main_director FROM Directors WHERE Movie_id=%s', (M_id,))
+        try:
+            (Persons_id,M_id,ID , IMD) = cursor.fetchone()
+        except:
+            return None
+        connection.commit()
+        put_connection(connection)
+        return DirectorGateway(Director(Persons_id,M_id,ID , IMD))
+#------------------------------------------------------------------------------------------------------
+        
+class Format:
+    '''Format of film
+    e.g. thriller,comedy,drama,horror...
+    attributes: format_name,id
+    '''
+    def __init__(self, format_name, ID = None):
+        self.format_name = format_name
+        self.id = ID
+        
+class FormatGateway:
+    '''Format gateway which contains insert,update,delete'''
+    def __init__(self, f):
+        self.format = f
+
+    def insert(self):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('INSERT INTO format (format_name) VALUES (%s) RETURNING id',
+                       (self.format.format_name, ))
+        new_id = cursor.fetchone()[0]
+        connection.commit()
+        put_connection(connection)
+        self.format.id = new_id
+
+    def update(self):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('UPDATE format SET format_name = %s WHERE id=%s',
+                       (self.format.format_name, self.format.id))
+        connection.commit()
+        put_connection(connection)
+    def delete(self):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('DELETE FROM format WHERE id=%s', (self.format.id,))
+        connection.commit()
+        put_connection(connection)
+class FormatFinder:
+    '''find Format by its ID'''
+    @staticmethod
+    def find(format_id):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('SELECT id, format_name FROM format WHERE id=%s', (format_id,))
+        (format_id, format_name) = cursor.fetchone()
+        connection.commit()
+        put_connection(connection)
+        return FormatGateway(Format(format_name, format_id))
+#------------------------------------------------------------------------------------------------------
+   
+class Movie:
+    '''film
+    attributes:name,year,language_id,format_id,rating,id
+    '''
+    def __init__(self, name, year, languages_id, format_id, rating, ID = None):
+        self.name = name
+        self.year = year
+        self.languages_id = languages_id
+        self.format_id = format_id
+        self.rating = rating
+        self.id = ID
+        
+class MovieGateway:
+    '''Movies gateway which contains insert,update,delete'''    
+    def __init__(self, Film):
+        self.movie = Film
+    def insert(self):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('INSERT INTO Movies (name, year, languages_id, format_id, rating) VALUES (%s, %s, %s, %s, %s) RETURNING id',
+                       (self.movie.name, self.movie.year, self.movie.languages_id, self.movie.format_id, self.movie.year))
+        
+        new_id = cursor.fetchone()[0]
+        connection.commit()
+        put_connection(connection)
+        self.movie.id = new_id
+
+    def update(self):
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('UPDATE Movies SET name = %s, year = %s, languages_id = %s, format_id = %s, rating = %s WHERE id=%s',
+                       (self.movie.name, self.movie.year, self.movie.languages_id, self.movie.format_id, self.movie.rating, self.movie.id))
+        connection.commit()
+        put_connection(connection)
+    def delete(self):
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('DELETE FROM Movies WHERE id=%s', (self.movie.id,))
+        connection.commit()
+        put_connection(connection)
+class MovieFinder:
+    '''Find Movie by specific arguments'''
+    @staticmethod
+    def find(movie_id):
+        '''Movie Format by its ID'''
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('SELECT id, name, year, languages_id, format_id, rating FROM Movies WHERE id=%s', (movie_id,))
+        try:
+            (movie_id, name, year, languages_id, format_id, rating) = cursor.fetchone()
+        except:
+            return None
+        connection.commit()
+        put_connection(connection)
+        return MovieGateway(Movie(name, year, languages_id, format_id, rating, movie_id))
+    @staticmethod
+    def findByName(name):
+        '''Movie Format by its name'''
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('SELECT id, name, year, languages_id, format_id, rating FROM Movies WHERE name=%s',( name,))
+        try:
+            (movie_id, name, year, languages_id, format_id, rating) = cursor.fetchone()
+        except:
+            return None
+        connection.commit()
+        put_connection(connection)
+        return MovieGateway(Movie(name, year, languages_id, format_id, rating, movie_id))
+
+#------------------------------------------------------------------------------------------------------ 
+        
+
+class Person:
+    '''class Person 
+    attributes id,name,rating'''
+    id = 0
+    name = None
+    rating = None
+
+    def __init__(self, name, rating, ID = None):
+        self.id = ID
+        self.name = name
+        self.rating = rating
+
+class PersonGateway:
+    '''gateway  person contains insert, update, delete'''
+    person = None
+
+    def __init__(self, P):
+        
+        self.person = P
+
+    def insert(self):
+        '''insert person. Input values are name'''
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('INSERT INTO persons (name,rating) VALUES ( %s, %s) RETURNING id',
+                       (self.person.name, self.person.rating))
+        connection.commit()
+        put_connection(connection)
+        new_id = cursor.fetchone()[0]
+        print(new_id)
+        self.person.id = new_id
+
+    def update(self):
+        '''update person by id'''
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('UPDATE Persons SET name=%s, rating=%s WHERE id=%s',
+                       (self.person.name, self.person.rating,  self.person.id))
+        connection.commit()
+        put_connection(connection)
+    def delete(self):
+        '''delete person by id'''
+        connection = get_connection() 
+        cursor = connection.cursor()
+        cursor.execute('DELETE FROM Persons WHERE id=%s', (self.person.id,))
+        connection.commit()
+        put_connection(connection)
+class PersonFinder:
+    @staticmethod
+    
+    def find(P_id):
+        '''find person by id
+        returning object Person'''
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('SELECT id, name, rating FROM Persons WHERE id=%s', (P_id,))
+        try:
+            P_id, name, rating = cursor.fetchone()
+        except:
+            return None
+        connection.commit()
+        put_connection(connection)
+        return PersonGateway(Person( name, rating,P_id))
+    @staticmethod
+    def findByName(P_name):
+        '''find person by name
+        returning object Person'''
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute('SELECT id, name, rating FROM Persons WHERE name=%s', (P_name,))
+        try:
+            P_id, P_name, rating = cursor.fetchone()
+        except:
+            return None
+        connection.commit()
+        put_connection(connection)
+        return PersonGateway(Person( P_name, rating,P_id))
+
