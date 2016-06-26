@@ -1,5 +1,5 @@
 # Film-database
-data gateway connection-PostgreSQL
+#data gateway connection-PostgreSQL
 My goal is to create a console application which comunicate with user as a classic command line(shell)
 by typing help u will see manual:
 DONT USE MORE SPACES THAN IS WRITEN IN HELP COMMANDS!
@@ -41,7 +41,7 @@ DEL movie/name
      detail = delete all information about this film.
      From tables Act,Directors,Movies
 
---------------------------------------
+#--------------------------------------
 if u need some concrete exapmles,here u are
         
 # EXAMPLES:
@@ -55,9 +55,9 @@ comma="add lang person/Kate Winslet/2"
 comma="add lang person/Kate Winslet/7"
 comma="del movie/Alice in wonderland"
 comma="DEL movie/Alice in wonderland"
-----------------------------------------
+#----------------------------------------
 db.jpg is UML diagram of tables. I recomend firstly check this picture.
 know the structure and relations of tables.
-----------------------------------------
+#----------------------------------------
 
 
